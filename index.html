@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marble Race: Ultimate 20 Map Edition</title>
+    <title>Marble Race: Ultimate Spectator Edition</title>
     <style>
         :root { --primary: #00ffcc; --bg: #0b0d14; --panel: linear-gradient(145deg, #1a1e29, #12151c); }
         body { margin: 0; background: var(--bg); color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         h1 { margin: 20px 0 10px 0; font-size: 32px; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0,255,204,0.4); text-align: center;}
         
-        /* Custom Scrollbars */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
@@ -34,7 +33,7 @@
         .marble-row:hover { border-color: #475569; background: rgba(0,0,0,0.5); }
         .marble-row input[type="color"] { width: 100%; height: 35px; border: none; cursor: pointer; background: transparent; padding: 0;}
         
-        .btn { background: var(--primary); color: #0b0d14; border: none; padding: 12px 24px; font-size: 14px; font-weight: 800; cursor: pointer; border-radius: 8px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn { background: var(--primary); color: #0b0d14; border: none; padding: 12px 24px; font-size: 14px; font-weight: 800; cursor: pointer; border-radius: 8px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; justify-content: center;}
         .btn:hover { background: #fff; box-shadow: 0 0 20px rgba(0,255,204,0.6); transform: translateY(-2px); }
         .btn:active { transform: translateY(0); }
         .btn-small { padding: 8px 12px; font-size: 12px; }
@@ -50,17 +49,17 @@
         
         #roundBanner { position: absolute; top: 15px; left: 15px; background: rgba(15,23,42,0.9); color: #fbbf24; padding: 10px 20px; border-radius: 8px; font-weight: 800; border: 1px solid #fbbf24; z-index: 10; box-shadow: 0 5px 15px rgba(0,0,0,0.5); text-transform: uppercase;}
 
-        /* Glassmorphism Leaderboard */
-        #liveLeaderboard { width: 300px; background: rgba(18, 21, 28, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; display: flex; flex-direction: column; max-height: 700px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        #liveLeaderboard { width: 320px; background: rgba(18, 21, 28, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; display: flex; flex-direction: column; max-height: 700px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         .lb-title { text-align: center; font-weight: 800; color: var(--primary); padding: 15px; font-size: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); text-transform: uppercase; letter-spacing: 1px; background: rgba(0,0,0,0.2); border-radius: 12px 12px 0 0;}
         #lbContentWrapper { overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; padding: 10px; flex: 1; }
-        .lb-item { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 6px; background: rgba(0,0,0,0.4); border-radius: 6px; font-size: 14px; font-weight: 700; border: 1px solid transparent; transition: 0.2s;}
-        .lb-item:hover { border-color: rgba(255,255,255,0.1); background: rgba(0,0,0,0.6); }
+        .lb-item { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 6px; background: rgba(0,0,0,0.4); border-radius: 6px; font-size: 14px; font-weight: 700; border: 1px solid transparent; transition: 0.2s; cursor: pointer;}
+        .lb-item:hover { border-color: var(--primary); background: rgba(0,255,204,0.1); }
+        .lb-item.eliminated { opacity: 0.5; filter: grayscale(1); }
         .lb-color { width: 16px; height: 16px; border-radius: 50%; margin-right: 12px; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.5); flex-shrink: 0;}
         .lb-rank { width: 30px; color: #94a3b8; font-size: 13px;}
         .lb-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lb-time { font-family: monospace; font-size: 12px; color: #fbbf24; }
 
-        /* Graph UI */
         #graphCanvas { background: #0f111a; width: 100%; height: 350px; border-radius: 12px; margin-top: 15px; border: 1px solid #334155;}
         .graph-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 15px; justify-content: center; font-size: 13px; font-weight: 600;}
         .legend-item { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 12px; border: 1px solid #334155;}
@@ -73,27 +72,38 @@
 
     <div id="setupMenu" class="panel">
         <div class="settings-grid">
-            <div class="form-group"><label>Virtual Map Length/Size (Pixels)</label><input type="number" id="trackLength" value="5000" min="1000" max="50000"></div>
-            <div class="form-group"><label>Map Architecture (20 Layouts)</label><select id="mapArchitectureSelect"></select></div>
+            <div class="form-group"><label>Race Mode</label>
+                <select id="raceModeSelect" onchange="toggleModes()">
+                    <option value="classic">Classic Finish Line</option>
+                    <option value="knockout">Checkpoints (Knockout Elimination)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Virtual Map Length/Size (Pixels)</label><input type="number" id="trackLength" value="5000" min="1000" max="100000"></div>
+            <div class="form-group"><label>Map Architecture (30 Layouts)</label><select id="mapArchitectureSelect"></select></div>
             <div class="form-group"><label>Visual Theme Backgrounds</label><select id="trackDesignSelect" onchange="updateCustomBgState()"></select></div>
-            <div class="form-group"><label>Custom Map Background</label><input type="file" id="customBgUpload" accept="image/*" onchange="handleBgUpload(event)"></div>
+        </div>
+
+        <div id="knockoutSettings" style="display:none; margin-bottom: 15px; background: #0f111a; padding: 15px; border-radius: 8px; border: 1px solid #ff3366;">
+            <label style="color: #ff3366; font-weight:bold; font-size:13px; text-transform:uppercase;">Knockout Checkpoint Settings</label>
+            <div style="display:flex; gap:10px; align-items:center; margin-top:10px; font-size:14px;">
+                Place a Checkpoint every <input type="number" id="cpInterval" value="2000" style="width:80px;"> px. 
+                Eliminate the last <input type="number" id="cpElim" value="2" style="width:60px;"> to cross it.
+            </div>
         </div>
 
         <div class="form-group" style="margin-bottom: 20px;">
-            <label class="checkbox-group"><input type="checkbox" id="tournamentToggle" onchange="toggleTournament()"> Enable Multi-Round Elimination Tournament</label>
+            <label class="checkbox-group"><input type="checkbox" id="tournamentToggle" onchange="toggleModes()"> Enable Multi-Round Tournament</label>
             <div id="tournamentSettings" style="display:none; margin-top: 10px; background: #0f111a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
-                <label style="color: #fbbf24;">Elimination Pattern (e.g., "2, 1, 3")</label><input type="text" id="eliminationPattern" value="2, 1, 1" placeholder="Comma separated numbers">
-                <p style="font-size: 12px; color: #64748b; margin: 8px 0 0 0;">Numbers indicate how many marbles are eliminated each round.</p>
+                <label style="color: #fbbf24;">Tournament Elimination Pattern (e.g., "2, 1, 3")</label><input type="text" id="eliminationPattern" value="2, 1, 1" placeholder="Comma separated numbers">
             </div>
         </div>
 
         <div class="settings-grid" style="margin-bottom: 0;">
             <div class="form-group">
-                <label>Bulk Add List (1 Name per line)</label>
-                <textarea id="bulkAddList" rows="4" placeholder="Red Team&#10;Blue Team&#10;Green Team"></textarea>
+                <label>Bulk Add List (1 Name per line)</label><textarea id="bulkAddList" rows="3" placeholder="Red Team&#10;Blue Team"></textarea>
                 <button class="btn btn-small" onclick="addBulkMarbles()" style="margin-top: 8px; width: 100%;">+ Bulk Add List</button>
             </div>
-            <div class="form-group"><label>Or Start With a Roster Template</label><select id="templateSelect" size="4" style="height: 95px;" onchange="applyTemplate()"></select></div>
+            <div class="form-group"><label>Roster Templates</label><select id="templateSelect" size="4" style="height: 85px;" onchange="applyTemplate()"></select></div>
         </div>
 
         <div class="marble-header">
@@ -110,7 +120,14 @@
     </div>
 
     <div id="gameUI" class="panel">
-        <div style="margin-bottom: 15px; text-align: center;"><button class="btn btn-danger" onclick="abortRace()">Abort Race</button></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; max-width:1000px; margin: 0 auto 15px auto; background:rgba(0,0,0,0.5); padding:10px 20px; border-radius:8px; border:1px solid #334155; box-sizing:border-box;">
+            <div><button class="btn btn-small" style="background:#8b5cf6; color:#fff;" onclick="spectateNearest()">👁️ Spectate Leader</button></div>
+            <div style="font-family:monospace; font-size:24px; font-weight:bold; color:var(--primary); text-shadow:0 0 10px rgba(0,255,204,0.5);" id="gameTimer">00:00.000000</div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-small btn-danger" id="recordBtn" onclick="toggleRecording()">🔴 Record</button>
+                <button class="btn btn-small btn-danger" onclick="abortRace()">Abort Race</button>
+            </div>
+        </div>
         <div id="gameWrapper">
             <div class="canvas-container">
                 <div id="roundBanner" style="display:none;">Round 1</div>
@@ -118,9 +135,7 @@
             </div>
             <div id="liveLeaderboard">
                 <div class="lb-title">LIVE STANDINGS</div>
-                <div id="lbContentWrapper">
-                    <div id="lbContent"></div>
-                </div>
+                <div id="lbContentWrapper"><div id="lbContent"></div></div>
             </div>
         </div>
     </div>
@@ -129,6 +144,11 @@
         <h2 style="color: #00ffcc; text-align: center; margin-top: 0; font-size: 28px;" id="postRaceTitle">Race Complete!</h2>
         <h3 id="winnerText" style="text-align: center; margin-bottom: 10px; color: #fff;"></h3>
         
+        <div style="background: #0f111a; padding: 15px; border-radius: 8px; border: 1px solid #38bdf8; margin-top: 15px; text-align:center;">
+            <h4 style="color: #38bdf8; margin: 0 0 10px 0; text-transform: uppercase;">Closest Finishes (Top 3)</h4>
+            <div id="closestFinishes" style="font-family:monospace; font-size:16px; font-weight:bold; line-height:1.6;"></div>
+        </div>
+
         <div id="tournamentResults" class="tournament-results" style="display: none;">
             <div style="background: #0f111a; padding: 15px; border-radius: 8px; border: 1px solid #334155;">
                 <h4 style="color: #00ffcc; margin: 0 0 10px 0; border-bottom: 1px solid #334155; padding-bottom: 8px; text-transform: uppercase;">Advance to Next Round</h4><div id="advancingList" style="line-height: 1.6;"></div>
@@ -186,138 +206,183 @@ function spawnGrid(comps, mode) {
         marbles.push(new Marble(x, y, data));
     });
 }
-
-function randPegs(countFactor, xs, xe, ys, ye, b=RESTITUTION) {
-    let num = Math.floor((((xe-xs)*(ye-ys)) / 4000) * countFactor);
-    for(let i=0; i<num; i++) pegs.push(new Peg(xs + Math.random()*(xe-xs), ys + Math.random()*(ye-ys), Math.random()*3+3, b));
-}
+function randPegs(c, xs, xe, ys, ye, b=RESTITUTION) { let n = Math.floor((((xe-xs)*(ye-ys))/4000)*c); for(let i=0; i<n; i++) pegs.push(new Peg(xs+Math.random()*(xe-xs), ys+Math.random()*(ye-ys), Math.random()*3+3, b)); }
 
 const mapArchitectures = [
-    { name: "1. Classic Vertical Drop", init: (len) => { boundX = 500; boundY = len; randPegs(1, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "2. Horizontal Dash (Left to Right)", init: (len) => { boundX = len; boundY = 700; randPegs(1, 150, boundX-150, 20, 680); }, spawn: (c) => spawnGrid(c, 'left'), getGravity: () => ({x: GRAVITY, y: 0}), checkFinish: (m) => m.x > boundX - 50, getProgress: (m) => m.x, camTarget: (l) => ({ x: l.x - 250, y: 0 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(boundX-50, 0); ctx.lineTo(boundX-50, boundY); ctx.stroke(); } },
-    { name: "3. Reverse Dash (Right to Left)", init: (len) => { boundX = len; boundY = 700; randPegs(1, 150, boundX-150, 20, 680); }, spawn: (c) => spawnGrid(c, 'right'), getGravity: () => ({x: -GRAVITY, y: 0}), checkFinish: (m) => m.x < 50, getProgress: (m) => -m.x, camTarget: (l) => ({ x: l.x - 250, y: 0 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(50, 0); ctx.lineTo(50, boundY); ctx.stroke(); } },
-    { name: "4. Anti-Gravity Ascension", init: (len) => { boundX = 500; boundY = len; randPegs(1, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'bottom'), getGravity: () => ({x: 0, y: -GRAVITY}), checkFinish: (m) => m.y < 50, getProgress: (m) => -m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, 50); ctx.lineTo(boundX, 50); ctx.stroke(); } },
-    { name: "5. The Black Hole", init: (len) => { boundX = 1500; boundY = 1500; randPegs(0.8, 100, 1400, 100, 1400); }, spawn: (c) => spawnGrid(c, 'ring'), getGravity: (m) => { let dx = 750 - m.x, dy = 750 - m.y; let dist = Math.sqrt(dx*dx + dy*dy) || 1; return { x: (dx/dist)*GRAVITY*1.5, y: (dy/dist)*GRAVITY*1.5 }; }, checkFinish: (m) => Math.sqrt((750-m.x)**2 + (750-m.y)**2) < 40, getProgress: (m) => -Math.sqrt((750-m.x)**2 + (750-m.y)**2), camTarget: (l) => ({ x: l.x - 250, y: l.y - 350 }), drawFinish: () => { ctx.beginPath(); ctx.arc(750, 750, 40, 0, Math.PI*2); ctx.fillStyle='rgba(0,255,204,0.3)'; ctx.fill(); ctx.stroke(); } },
-    { name: "6. Tornado Alley", init: (len) => { boundX = 500; boundY = len; randPegs(0.5, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: Math.sin(frameCount/20)*0.35, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "7. Pinball Bouncers", init: (len) => { boundX = 500; boundY = len; randPegs(0.6, 20, 480, 150, boundY-150, 1.3); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "8. The Funnel", init: (len) => { boundX = 500; boundY = len; for(let y=300; y<boundY-200; y+=500) { for(let i=0; i<20; i++) { pegs.push(new Peg(0 + i*10, y + i*15, 6, RESTITUTION)); pegs.push(new Peg(500 - i*10, y + i*15, 6, RESTITUTION)); } } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "9. Zig-Zag Maze", init: (len) => { boundX = 500; boundY = len; let left = true; for(let y=200; y<boundY-200; y+=350) { let sx = left ? 0 : 150, ex = left ? 350 : 500; for(let x=sx; x<=ex; x+=15) pegs.push(new Peg(x, y + (x-sx)*(left?0.3:-0.3), 6, RESTITUTION)); left = !left; } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "10. Plinko Pyramid", init: (len) => { boundX = 500; boundY = len; for (let y = 150; y < boundY - 150; y += 45) { let sX = (y % 90 === 0) ? 20 : 40; for (let x = sX; x < boundX - 20; x += 45) pegs.push(new Peg(x, y, 5, RESTITUTION)); } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "11. Washing Machine", init: (len) => { boundX = 500; boundY = len; randPegs(0.8, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: Math.cos(frameCount/20)*0.4, y: Math.sin(frameCount/20)*0.4 + GRAVITY*0.6}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "12. Dual Paths", init: (len) => { boundX = 500; boundY = len; randPegs(1.2, 20, 480, 150, boundY-150); for(let y=150; y<boundY-150; y+=20) { for(let x=180; x<=320; x+=20) pegs.push(new Peg(x, y, 8, RESTITUTION)); } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "13. The Grid", init: (len) => { boundX = 500; boundY = len; for(let x=40; x<480; x+=45) for(let y=150; y<boundY-150; y+=45) pegs.push(new Peg(x, y, 6, RESTITUTION)); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "14. Zero Gravity Bounce", init: (len) => { boundX = 500; boundY = len; randPegs(0.3, 20, 480, 150, boundY-150, 1.1); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY * 0.2}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "15. Galton Board", init: (len) => { boundX = 500; boundY = len; let y=150; for(let row=0; y<boundY-150; row++) { let numP = row+1; let rowW = numP*40; let startX = 250 - rowW/2; for(let i=0; i<numP; i++) { if(startX+i*40 > 10 && startX+i*40 < 490) pegs.push(new Peg(startX+i*40, y, 5, RESTITUTION)); } y+=40; } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "16. Free Fall (Drag Race)", init: (len) => { boundX = 500; boundY = len; pegs = []; }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "17. Pachinko", init: (len) => { boundX = 500; boundY = len; randPegs(1.5, 20, 480, 150, boundY/2); randPegs(0.3, 20, 480, boundY/2, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "18. Half Pipe", init: (len) => { boundX = 500; boundY = len; randPegs(0.5, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: (m) => ({x: (250 - m.x)*0.001, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "19. Wind Tunnel", init: (len) => { boundX = 500; boundY = len; randPegs(0.8, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: (Math.random()-0.5)*0.6, y: GRAVITY*0.6}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } },
-    { name: "20. Asteroid Field", init: (len) => { boundX = 500; boundY = len; let num = ((460*(len-300))/4000)*0.5; for(let i=0; i<num; i++) pegs.push(new Peg(20+Math.random()*460, 150+Math.random()*(boundY-300), Math.random()*15+5, RESTITUTION)); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), drawFinish: () => { ctx.setLineDash([10,10]); ctx.beginPath(); ctx.moveTo(0, boundY-50); ctx.lineTo(boundX, boundY-50); ctx.stroke(); } }
+    { name: "1. Classic Vertical Drop", init: (len) => { boundX = 500; boundY = len; randPegs(1, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "2. Horizontal Dash", init: (len) => { boundX = len; boundY = 700; randPegs(1, 150, boundX-150, 20, 680); }, spawn: (c) => spawnGrid(c, 'left'), getGravity: () => ({x: GRAVITY, y: 0}), checkFinish: (m) => m.x > boundX - 50, getProgress: (m) => m.x, camTarget: (l) => ({ x: l.x - 250, y: 0 }) },
+    { name: "3. Reverse Dash", init: (len) => { boundX = len; boundY = 700; randPegs(1, 150, boundX-150, 20, 680); }, spawn: (c) => spawnGrid(c, 'right'), getGravity: () => ({x: -GRAVITY, y: 0}), checkFinish: (m) => m.x < 50, getProgress: (m) => -m.x, camTarget: (l) => ({ x: l.x - 250, y: 0 }) },
+    { name: "4. Anti-Gravity Ascension", init: (len) => { boundX = 500; boundY = len; randPegs(1, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'bottom'), getGravity: () => ({x: 0, y: -GRAVITY}), checkFinish: (m) => m.y < 50, getProgress: (m) => -m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "5. The Black Hole", init: (len) => { boundX = 1500; boundY = 1500; randPegs(0.8, 100, 1400, 100, 1400); }, spawn: (c) => spawnGrid(c, 'ring'), getGravity: (m) => { let dx = 750 - m.x, dy = 750 - m.y; let d = Math.sqrt(dx*dx + dy*dy) || 1; return { x: (dx/d)*GRAVITY*1.5, y: (dy/d)*GRAVITY*1.5 }; }, checkFinish: (m) => Math.sqrt((750-m.x)**2 + (750-m.y)**2) < 40, getProgress: (m) => -Math.sqrt((750-m.x)**2 + (750-m.y)**2), camTarget: (l) => ({ x: l.x - 250, y: l.y - 350 }) },
+    { name: "6. Tornado Alley", init: (len) => { boundX = 500; boundY = len; randPegs(0.5, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: Math.sin(frameCount/20)*0.35, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "7. Pinball Bouncers", init: (len) => { boundX = 500; boundY = len; randPegs(0.6, 20, 480, 150, boundY-150, 1.3); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "8. The Funnel", init: (len) => { boundX = 500; boundY = len; for(let y=300; y<boundY-200; y+=500) { for(let i=0; i<20; i++) { pegs.push(new Peg(i*10, y+i*15, 6, RESTITUTION)); pegs.push(new Peg(500-i*10, y+i*15, 6, RESTITUTION)); } } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "9. Zig-Zag Maze", init: (len) => { boundX = 500; boundY = len; let left = true; for(let y=200; y<boundY-200; y+=350) { let sx = left?0:150, ex = left?350:500; for(let x=sx; x<=ex; x+=15) pegs.push(new Peg(x, y+(x-sx)*(left?0.3:-0.3), 6, RESTITUTION)); left = !left; } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "10. Plinko Pyramid", init: (len) => { boundX = 500; boundY = len; for (let y=150; y<boundY-150; y+=45) { let sX = (y%90===0)?20:40; for (let x=sX; x<boundX-20; x+=45) pegs.push(new Peg(x, y, 5, RESTITUTION)); } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "11. Washing Machine", init: (len) => { boundX = 500; boundY = len; randPegs(0.8, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: Math.cos(frameCount/20)*0.4, y: Math.sin(frameCount/20)*0.4 + GRAVITY*0.6}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "12. Dual Paths", init: (len) => { boundX = 500; boundY = len; randPegs(1.2, 20, 480, 150, boundY-150); for(let y=150; y<boundY-150; y+=20) { for(let x=180; x<=320; x+=20) pegs.push(new Peg(x, y, 8, RESTITUTION)); } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "13. The Grid", init: (len) => { boundX = 500; boundY = len; for(let x=40; x<480; x+=45) for(let y=150; y<boundY-150; y+=45) pegs.push(new Peg(x, y, 6, RESTITUTION)); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "14. Zero Gravity Bounce", init: (len) => { boundX = 500; boundY = len; randPegs(0.3, 20, 480, 150, boundY-150, 1.1); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY * 0.2}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "15. Galton Board", init: (len) => { boundX = 500; boundY = len; let y=150; for(let r=0; y<boundY-150; r++) { let nP=r+1; let sX=250-(nP*40)/2; for(let i=0; i<nP; i++) if(sX+i*40>10 && sX+i*40<490) pegs.push(new Peg(sX+i*40, y, 5, RESTITUTION)); y+=40; } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "16. Free Fall (Drag Race)", init: (len) => { boundX = 500; boundY = len; pegs = []; }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "17. Pachinko", init: (len) => { boundX = 500; boundY = len; randPegs(1.5, 20, 480, 150, boundY/2); randPegs(0.3, 20, 480, boundY/2, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "18. Half Pipe", init: (len) => { boundX = 500; boundY = len; randPegs(0.5, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: (m) => ({x: (250 - m.x)*0.001, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "19. Wind Tunnel", init: (len) => { boundX = 500; boundY = len; randPegs(0.8, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: (Math.random()-0.5)*0.6, y: GRAVITY*0.6}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "20. Asteroid Field", init: (len) => { boundX = 500; boundY = len; let num = ((460*(len-300))/4000)*0.5; for(let i=0; i<num; i++) pegs.push(new Peg(20+Math.random()*460, 150+Math.random()*(boundY-300), Math.random()*15+5, RESTITUTION)); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "21. The Hourglass", init: (len) => { boundX = 500; boundY = len; for(let y=150; y<boundY-150; y+=30) { let w=Math.abs(y-(boundY/2)); let ex=250-w*0.3; if(ex>20){ pegs.push(new Peg(ex,y,6,RESTITUTION)); pegs.push(new Peg(500-ex,y,6,RESTITUTION)); } } randPegs(0.2, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "22. Black Diamond", init: (len) => { boundX = 500; boundY = len; randPegs(1.2, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY * 1.8}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "23. Pachinko Hell", init: (len) => { boundX = 500; boundY = len; randPegs(2.5, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "24. Bouncy Castle", init: (len) => { boundX = 500; boundY = len; randPegs(0.8, 20, 480, 150, boundY-150, 1.8); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "25. Gravity Flip", init: (len) => { boundX = 500; boundY = len; randPegs(0.8, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: Math.sin(frameCount/80)*GRAVITY*0.8 + GRAVITY*0.5}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "26. Snake Path", init: (len) => { boundX = 500; boundY = len; for(let y=150; y<boundY-150; y+=20) { let cx=250+Math.sin(y/200)*150; pegs.push(new Peg(cx-60,y,8,RESTITUTION)); pegs.push(new Peg(cx+60,y,8,RESTITUTION)); } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "27. Chaos Box", init: (len) => { boundX = 500; boundY = len; randPegs(0.6, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: Math.cos(frameCount/30)*GRAVITY, y: Math.sin(frameCount/30)*GRAVITY + GRAVITY*0.5}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "28. Quantum Wrap (No Walls)", init: (len) => { boundX = 500; boundY = len; randPegs(0.8, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }), wrapX: true },
+    { name: "29. Slow Motion Zone", init: (len) => { boundX = 500; boundY = len; randPegs(0.8, 20, 480, 150, boundY-150); }, spawn: (c) => spawnGrid(c, 'top'), getGravity: (m) => { if(m.y>boundY/3 && m.y<(boundY/3)*2) { m.vy*=0.8; m.vx*=0.8; } return {x:0,y:GRAVITY}; }, checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) },
+    { name: "30. The Gauntlet", init: (len) => { boundX = 500; boundY = len; randPegs(1.5, 20, 480, 150, 1000); for(let y=1200; y<boundY-500; y+=50) { pegs.push(new Peg(150,y,10,RESTITUTION)); pegs.push(new Peg(350,y,10,RESTITUTION)); } }, spawn: (c) => spawnGrid(c, 'top'), getGravity: () => ({x: 0, y: GRAVITY}), checkFinish: (m) => m.y > boundY - 50, getProgress: (m) => m.y, camTarget: (l) => ({ x: 0, y: l.y - 420 }) }
 ];
-        let masterCompetitorList = []; let activeCompetitors = []; let nextMarbleId = 0; let customBackgroundImage = null;
-let isTournamentMode = false; let currentRound = 1; let marbles = []; let pegs = []; let boundX = 500; let boundY = 5000;
+
+class Marble {
+    constructor(x, y, data) { this.x = x; this.y = y; this.vx = (Math.random()-0.5)*3; this.vy = (Math.random()-0.5)*3; this.radius = 10; this.color = data.color; this.name = data.name; this.img = data.img; this.dataRef = data; this.finished = false; this.eliminated = false; this.finishRank = 0; this.finishTime = 0; this.history = []; this.progressHistory = []; this.passedCheckpoints = []; this.stuckFrames = 0;}
+    update() {
+        if (this.finished || this.eliminated) return;
+        let grav = curArch.getGravity(this); this.vx += grav.x + (Math.random()-0.5)*0.02; this.vy += grav.y + (Math.random()-0.5)*0.02; this.vx *= 0.99; this.vy *= 0.99; this.x += this.vx; this.y += this.vy;
+        
+        if (curArch.wrapX) { if (this.x < 0) this.x = boundX; else if (this.x > boundX) this.x = 0; } 
+        else { if (this.x - this.radius < 0) { this.x = this.radius; this.vx *= -RESTITUTION; } else if (this.x + this.radius > boundX) { this.x = boundX - this.radius; this.vx *= -RESTITUTION; } }
+        if (this.y - this.radius < 0) { this.y = this.radius; this.vy *= -RESTITUTION; } else if (this.y + this.radius > boundY && !isKnockoutMode) { this.y = boundY - this.radius; this.vy *= -RESTITUTION; }
+        
+        let prog = curArch.getProgress(this); this.progressHistory.push(prog);
+        if (Math.abs(this.vx) < 0.1 && Math.abs(this.vy) < 0.1) this.stuckFrames++; else this.stuckFrames = 0;
+        
+        if (this.progressHistory.length > 90) { 
+            let oldProg = this.progressHistory.shift(); 
+            if (Math.abs(prog - oldProg) < 5 || this.stuckFrames > 60) { this.vx = (Math.random()-0.5)*25; this.vy = (Math.random()-0.5)*25 - 5; this.progressHistory = []; this.x += (Math.random()-0.5)*15; this.stuckFrames = 0;} 
+        }
+
+        if (isKnockoutMode) {
+            for (let i=0; i<checkpoints.length; i++) {
+                if (this.y > checkpoints[i] && !this.passedCheckpoints.includes(i)) {
+                    this.passedCheckpoints.push(i); checkpointCounts[i]++;
+                    if (checkpointCounts[i] > checkpointAllowed[i]) {
+                        this.eliminated = true; this.finishTime = performance.now() - raceStartTime; this.finishRank = activeCompetitors.length - checkpointCounts[i] + 1;
+                        if(marbles.filter(m=>!m.eliminated).length === 1) {
+                            let w = marbles.find(m=>!m.eliminated); w.finished = true; w.finishTime = performance.now() - raceStartTime; w.finishRank = 1; setTimeout(endRace, 1500);
+                        }
+                    }
+                }
+            }
+        } else if (curArch.checkFinish(this)) { 
+            this.finished = true; this.finishTime = performance.now() - raceStartTime; this.finishRank = marbles.filter(m => m.finished).length; 
+            if (marbles.every(m => m.finished)) setTimeout(endRace, 1000); 
+        }
+    }
+    draw() {
+        if(this.eliminated) ctx.globalAlpha = 0.3;
+        ctx.save(); ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        if (this.img && this.img.complete) { ctx.clip(); ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius*2, this.radius*2); } else { ctx.fillStyle = this.color; ctx.fill(); ctx.beginPath(); ctx.arc(this.x - this.radius/3, this.y - this.radius/3, this.radius/4, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill(); }
+        ctx.restore(); ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.strokeStyle = '#000'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.fillText(this.name, this.x, this.y - this.radius - 4);
+        if(this.eliminated) { ctx.fillStyle = '#ff3366'; ctx.font = 'bold 16px Arial'; ctx.fillText('❌', this.x, this.y+5); ctx.globalAlpha = 1.0; }
+    }
+}
+class Peg { constructor(x, y, radius, bounce=RESTITUTION) { this.x = x; this.y = y; this.radius = radius; this.bounce = bounce; } draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fillStyle = curTheme.pegs; ctx.fill(); } }
+function resolveCollision(marble, peg) { let dx = marble.x - peg.x; let dy = marble.y - peg.y; let dist = Math.sqrt(dx*dx + dy*dy); let minDist = marble.radius + peg.radius; if (dist < minDist) { let overlap = minDist - dist; marble.x += (dx/dist)*overlap; marble.y += (dy/dist)*overlap; let p = 2 * (marble.vx*(dx/dist) + marble.vy*(dy/dist)); marble.vx = ((marble.vx - p*(dx/dist)) * peg.bounce) + (Math.random()-0.5)*0.1; marble.vy = ((marble.vy - p*(dy/dist)) * peg.bounce) + (Math.random()-0.5)*0.1; } }
+let masterCompetitorList = []; let activeCompetitors = []; let nextMarbleId = 0; let customBackgroundImage = null;
+let isTournamentMode = false; let isKnockoutMode = false; let currentRound = 1; let marbles = []; let pegs = []; let boundX = 500; let boundY = 5000;
 let raceOver = false; let cameraX = 0; let cameraY = 0; let animationId; let frameCount = 0; let curTheme = trackDesigns[0]; let curArch = mapArchitectures[0];
-let autoScrollEnabled = true; let lastFinishedCount = 0;
+let autoScrollEnabled = true; let lastFinishedCount = 0; let spectatedMarble = null;
+let raceStartTime = 0; let mediaRecorder; let recordedChunks = []; let isRecording = false;
+let checkpoints = []; let checkpointCounts = []; let checkpointAllowed = [];
+
+function toggleModes() { document.getElementById('knockoutSettings').style.display = document.getElementById('raceModeSelect').value === 'knockout' ? 'block' : 'none'; document.getElementById('tournamentSettings').style.display = document.getElementById('tournamentToggle').checked ? 'block' : 'none'; }
+function formatTimePrecise(ms) { let mins = Math.floor(ms / 60000); let secs = Math.floor((ms % 60000) / 1000); let micro = ((ms % 1000) * 1000).toFixed(0).padStart(6, '0'); return `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}.${micro}`; }
 
 function initUI() {
     const ds = document.getElementById('trackDesignSelect'); trackDesigns.forEach((d, i) => ds.innerHTML += `<option value="${i}">${d.name}</option>`);
     const arch = document.getElementById('mapArchitectureSelect'); mapArchitectures.forEach((a, i) => arch.innerHTML += `<option value="${i}">${a.name}</option>`);
     const ts = document.getElementById('templateSelect'); Object.keys(templates).forEach(key => ts.innerHTML += `<option value="${key}">${key}</option>`);
     applyTemplate('Default Colors (16)');
-    
-    // Auto-scroll disable event when manually reaching bottom
     const lbWrap = document.getElementById('lbContentWrapper');
-    lbWrap.addEventListener('scroll', () => {
-        if(lbWrap.scrollTop + lbWrap.clientHeight >= lbWrap.scrollHeight - 5) autoScrollEnabled = false;
-    });
+    lbWrap.addEventListener('scroll', () => { if(lbWrap.scrollTop + lbWrap.clientHeight >= lbWrap.scrollHeight - 5) autoScrollEnabled = false; });
 }
-function applyTemplate(forceKey = null) {
-    const key = forceKey || document.getElementById('templateSelect').value; if (!templates[key]) return;
-    masterCompetitorList = []; nextMarbleId = 0;
-    templates[key].forEach(item => { let [name, color] = item.split(':'); masterCompetitorList.push({ id: nextMarbleId++, name, color, img: null }); }); renderMarbleList();
-}
-function addBulkMarbles() {
-    let list = document.getElementById('bulkAddList').value.split('\n'); let added = 0;
-    list.forEach(name => { name = name.trim(); if (name) { masterCompetitorList.push({ id: nextMarbleId++, name, color: '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'), img: null }); added++; } });
-    if(added > 0) { document.getElementById('bulkAddList').value = ''; renderMarbleList(); }
-}
-function renderMarbleList() {
-    const list = document.getElementById('marbleList'); list.innerHTML = '';
-    masterCompetitorList.forEach((comp, index) => {
-        list.innerHTML += `<div class="marble-row"><span style="color:#94a3b8; font-weight:bold;">${index+1}.</span><input type="color" onchange="masterCompetitorList.find(c=>c.id===${comp.id}).color=this.value" value="${comp.color}"><input type="text" onchange="masterCompetitorList.find(c=>c.id===${comp.id}).name=this.value" value="${comp.name}" placeholder="Name"><input type="file" accept="image/*" style="font-size:11px; max-width:120px;" onchange="handleImg(event, ${comp.id})"><button class="btn btn-danger btn-small" onclick="removeMarble(${comp.id})">X</button></div>`;
-    }); document.getElementById('marbleCountDisplay').innerText = masterCompetitorList.length;
-}
-function handleImg(e, id) { let file = e.target.files[0]; if (file) { let r = new FileReader(); r.onload = ev => { let img = new Image(); img.src = ev.target.result; masterCompetitorList.find(c => c.id === id).img = img; }; r.readAsDataURL(file); } else masterCompetitorList.find(c => c.id === id).img = null; }
+function applyTemplate(fKey = null) { const k = fKey || document.getElementById('templateSelect').value; if (!templates[k]) return; masterCompetitorList = []; nextMarbleId = 0; templates[k].forEach(i => { let [n, c] = i.split(':'); masterCompetitorList.push({ id: nextMarbleId++, name:n, color:c, img: null }); }); renderMarbleList(); }
+function addBulkMarbles() { let lst = document.getElementById('bulkAddList').value.split('\n'); let add = 0; lst.forEach(n => { n = n.trim(); if (n) { masterCompetitorList.push({ id: nextMarbleId++, name:n, color: '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'), img: null }); add++; } }); if(add > 0) { document.getElementById('bulkAddList').value = ''; renderMarbleList(); } }
+function renderMarbleList() { const list = document.getElementById('marbleList'); list.innerHTML = ''; masterCompetitorList.forEach((c, i) => { list.innerHTML += `<div class="marble-row"><span style="color:#94a3b8; font-weight:bold;">${i+1}.</span><input type="color" onchange="masterCompetitorList.find(x=>x.id===${c.id}).color=this.value" value="${c.color}"><input type="text" onchange="masterCompetitorList.find(x=>x.id===${c.id}).name=this.value" value="${c.name}"><input type="file" accept="image/*" style="font-size:11px; max-width:120px;" onchange="handleImg(event, ${c.id})"><button class="btn btn-danger btn-small" onclick="removeMarble(${c.id})">X</button></div>`; }); document.getElementById('marbleCountDisplay').innerText = masterCompetitorList.length; }
+function handleImg(e, id) { let f = e.target.files[0]; if (f) { let r = new FileReader(); r.onload = ev => { let img = new Image(); img.src = ev.target.result; masterCompetitorList.find(c => c.id === id).img = img; }; r.readAsDataURL(f); } else masterCompetitorList.find(c => c.id === id).img = null; }
 function handleBgUpload(e) { let f = e.target.files[0]; if (f) { let r = new FileReader(); r.onload = ev => customBackgroundImage = `url(${ev.target.result})`; r.readAsDataURL(f); } else customBackgroundImage = null; }
 function updateCustomBgState() { customBackgroundImage = null; document.getElementById('customBgUpload').value = ""; }
 function addMarble() { masterCompetitorList.push({ id: nextMarbleId++, name: `Racer ${nextMarbleId}`, color: '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'), img: null }); renderMarbleList(); }
 function removeMarble(id) { masterCompetitorList = masterCompetitorList.filter(c => c.id !== id); renderMarbleList(); }
 function clearMarbles() { masterCompetitorList = []; renderMarbleList(); }
 function randomizeAllColors() { masterCompetitorList.forEach(c => c.color = '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')); renderMarbleList(); }
-function toggleTournament() { document.getElementById('tournamentSettings').style.display = document.getElementById('tournamentToggle').checked ? 'block' : 'none'; }
 
-class Marble {
-    constructor(x, y, data) { this.x = x; this.y = y; this.vx = (Math.random()-0.5)*3; this.vy = (Math.random()-0.5)*3; this.radius = 10; this.color = data.color; this.name = data.name; this.img = data.img; this.dataRef = data; this.finished = false; this.finishRank = 0; this.history = []; this.progressHistory = []; }
-    update() {
-        if (this.finished) return;
-        let grav = curArch.getGravity(this); this.vx += grav.x + (Math.random()-0.5)*0.02; this.vy += grav.y + (Math.random()-0.5)*0.02; this.vx *= 0.99; this.vy *= 0.99; this.x += this.vx; this.y += this.vy;
-        if (this.x - this.radius < 0) { this.x = this.radius; this.vx *= -RESTITUTION; } else if (this.x + this.radius > boundX) { this.x = boundX - this.radius; this.vx *= -RESTITUTION; }
-        if (this.y - this.radius < 0) { this.y = this.radius; this.vy *= -RESTITUTION; } else if (this.y + this.radius > boundY) { this.y = boundY - this.radius; this.vy *= -RESTITUTION; }
-        let prog = curArch.getProgress(this); this.progressHistory.push(prog);
-        if (this.progressHistory.length > 90) { let oldProg = this.progressHistory.shift(); if (Math.abs(prog - oldProg) < 5) { this.vx = (Math.random()-0.5)*12; this.vy = (Math.random()-0.5)*12; this.progressHistory = []; } }
-        if (curArch.checkFinish(this)) { this.finished = true; this.finishRank = marbles.filter(m => m.finished).length; if (this.finishRank === marbles.length) setTimeout(endRace, 1000); }
-    }
-    draw() {
-        ctx.save(); ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        if (this.img && this.img.complete) { ctx.clip(); ctx.drawImage(this.img, this.x - this.radius, this.y - this.radius, this.radius*2, this.radius*2); } else { ctx.fillStyle = this.color; ctx.fill(); ctx.beginPath(); ctx.arc(this.x - this.radius/3, this.y - this.radius/3, this.radius/4, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill(); }
-        ctx.restore(); ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.strokeStyle = '#000'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.fillText(this.name, this.x, this.y - this.radius - 4);
-    }
+function toggleRecording() {
+    const btn = document.getElementById('recordBtn');
+    if(!isRecording) {
+        const stream = canvas.captureStream(30); mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); recordedChunks = [];
+        mediaRecorder.ondataavailable = e => { if(e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = () => { const blob = new Blob(recordedChunks, { type: 'video/webm' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'marble_race.webm'; a.click(); };
+        mediaRecorder.start(); isRecording = true; btn.innerText = '⏹ Save Video'; btn.style.background = '#38bdf8';
+    } else { mediaRecorder.stop(); isRecording = false; btn.innerText = '🔴 Record'; btn.style.background = '#f43f5e'; }
 }
-class Peg { constructor(x, y, radius, bounce=RESTITUTION) { this.x = x; this.y = y; this.radius = radius; this.bounce = bounce; } draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fillStyle = curTheme.pegs; ctx.fill(); } }
-function resolveCollision(marble, peg) { let dx = marble.x - peg.x; let dy = marble.y - peg.y; let dist = Math.sqrt(dx*dx + dy*dy); let minDist = marble.radius + peg.radius; if (dist < minDist) { let overlap = minDist - dist; marble.x += (dx/dist)*overlap; marble.y += (dy/dist)*overlap; let p = 2 * (marble.vx*(dx/dist) + marble.vy*(dy/dist)); marble.vx = ((marble.vx - p*(dx/dist)) * peg.bounce) + (Math.random()-0.5)*0.1; marble.vy = ((marble.vy - p*(dy/dist)) * peg.bounce) + (Math.random()-0.5)*0.1; } }
 
-function startTournament() { if (masterCompetitorList.length < 2) return alert("Add at least 2 marbles!"); activeCompetitors = [...masterCompetitorList]; isTournamentMode = document.getElementById('tournamentToggle').checked; currentRound = 1; startRaceEngine(); }
+function spectate(id) { spectatedMarble = marbles.find(m => m.id === id); autoScrollEnabled = false; }
+function spectateNearest() { spectatedMarble = null; autoScrollEnabled = true; }
+
+function startTournament() { if (masterCompetitorList.length < 2) return alert("Add at least 2 marbles!"); activeCompetitors = [...masterCompetitorList]; isTournamentMode = document.getElementById('tournamentToggle').checked; isKnockoutMode = document.getElementById('raceModeSelect').value === 'knockout'; currentRound = 1; startRaceEngine(); }
 function startNextRound() { currentRound++; startRaceEngine(); }
 function startRaceEngine() {
     let len = parseInt(document.getElementById('trackLength').value) || 5000; curTheme = trackDesigns[document.getElementById('trackDesignSelect').value]; curArch = mapArchitectures[document.getElementById('mapArchitectureSelect').value];
-    canvas.style.background = customBackgroundImage ? customBackgroundImage : curTheme.bg; document.getElementById('setupMenu').style.display = 'none'; document.getElementById('postRaceUI').style.display = 'none'; document.getElementById('gameUI').style.display = 'flex';
+    canvas.style.background = customBackgroundImage ? customBackgroundImage : curTheme.bg; document.getElementById('setupMenu').style.display = 'none'; document.getElementById('postRaceUI').style.display = 'none'; document.getElementById('gameUI').style.display = 'block';
     const banner = document.getElementById('roundBanner'); if (isTournamentMode) { banner.style.display = 'block'; banner.innerText = `Round ${currentRound}`; } else { banner.style.display = 'none'; }
-    cancelAnimationFrame(animationId); marbles = []; pegs = []; cameraX = 0; cameraY = 0; frameCount = 0; raceOver = false; autoScrollEnabled = true; lastFinishedCount = 0;
-    curArch.init(len); curArch.spawn(activeCompetitors); animate();
+    cancelAnimationFrame(animationId); marbles = []; pegs = []; cameraX = 0; cameraY = 0; frameCount = 0; raceOver = false; autoScrollEnabled = true; lastFinishedCount = 0; spectatedMarble = null;
+    curArch.init(len); curArch.spawn(activeCompetitors); 
+    
+    checkpoints = []; checkpointCounts = []; checkpointAllowed = [];
+    if(isKnockoutMode) {
+        let cpSpace = parseInt(document.getElementById('cpInterval').value) || 2000; let cpElm = parseInt(document.getElementById('cpElim').value) || 2;
+        let surv = activeCompetitors.length; let yy = 1500;
+        while(yy < boundY - 50 && surv > 1) { checkpoints.push(yy); checkpointCounts.push(0); surv = Math.max(1, surv - cpElm); checkpointAllowed.push(surv); yy += cpSpace; }
+    }
+    raceStartTime = performance.now(); animate();
 }
 
 function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); frameCount++;
-    let sorted = [...marbles].sort((a, b) => { if (a.finished && b.finished) return a.finishRank - b.finishRank; if (a.finished) return -1; if (b.finished) return 1; return curArch.getProgress(b) - curArch.getProgress(a); });
-    if (frameCount % 20 === 0 && !marbles.every(m=>m.finished)) { sorted.forEach((m, i) => m.history.push(m.finished ? m.finishRank : i + 1)); }
+    document.getElementById('gameTimer').innerText = formatTimePrecise(performance.now() - raceStartTime);
     
-    let activeLeader = sorted.find(m => !m.finished) || sorted[0]; let camT = curArch.camTarget(activeLeader); cameraX += (Math.min(Math.max(0, camT.x), Math.max(0, boundX - canvas.width)) - cameraX) * 0.1; cameraY += (Math.min(Math.max(0, camT.y), Math.max(0, boundY - canvas.height)) - cameraY) * 0.1;
-    ctx.save(); ctx.translate(-cameraX, -cameraY); ctx.strokeStyle = curTheme.lines; ctx.lineWidth = 3; if(curArch.drawFinish) curArch.drawFinish();
+    let sorted = [...marbles].sort((a, b) => { if ((a.finished||a.eliminated) && (b.finished||b.eliminated)) return a.finishRank - b.finishRank; if (a.finished||a.eliminated) return -1; if (b.finished||b.eliminated) return 1; return curArch.getProgress(b) - curArch.getProgress(a); });
+    if (frameCount % 20 === 0 && !marbles.every(m=>m.finished||m.eliminated)) { sorted.forEach((m, i) => m.history.push(m.finished||m.eliminated ? m.finishRank : i + 1)); }
+    
+    if(spectatedMarble && (spectatedMarble.finished || spectatedMarble.eliminated)) spectatedMarble = null;
+    let activeLeader = sorted.find(m => !m.finished && !m.eliminated) || sorted[0]; let camT = curArch.camTarget(spectatedMarble || activeLeader); 
+    cameraX += (Math.min(Math.max(0, camT.x), Math.max(0, boundX - canvas.width)) - cameraX) * 0.1; cameraY += (Math.min(Math.max(0, camT.y), Math.max(0, boundY - canvas.height)) - cameraY) * 0.1;
+    
+    ctx.save(); ctx.translate(-cameraX, -cameraY); ctx.strokeStyle = curTheme.lines; ctx.lineWidth = 3;
+    if(!isKnockoutMode && curArch.drawFinish) curArch.drawFinish();
+    if(isKnockoutMode) { checkpoints.forEach((cy, i) => { ctx.setLineDash([5,5]); ctx.strokeStyle='#f43f5e'; ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(boundX, cy); ctx.stroke(); ctx.fillStyle='#f43f5e'; ctx.font='bold 16px Arial'; ctx.textAlign='center'; ctx.fillText(`CHECKPOINT ${i+1} (Top ${checkpointAllowed[i]} Survive)`, boundX/2, cy+20); ctx.setLineDash([]); }); }
+    
     pegs.forEach(p => { if (p.x > cameraX-20 && p.x < cameraX+canvas.width+20 && p.y > cameraY-20 && p.y < cameraY+canvas.height+20) p.draw(); });
-    marbles.forEach(m => { m.update(); pegs.forEach(p => resolveCollision(m, p)); marbles.forEach(o => { if (m !== o && !m.finished && !o.finished) { let dx = o.x - m.x; let dy = o.y - m.y; let dist = Math.sqrt(dx*dx + dy*dy); if (dist < m.radius + o.radius) { let tX = m.vx; let tY = m.vy; m.vx = o.vx*RESTITUTION; m.vy = o.vy*RESTITUTION; o.vx = tX*RESTITUTION; o.vy = tY*RESTITUTION; let overlap = (m.radius + o.radius) - dist; m.x -= (dx/dist)*(overlap/2); m.y -= (dy/dist)*(overlap/2); } } }); m.draw(); });
+    marbles.forEach(m => { m.update(); pegs.forEach(p => resolveCollision(m, p)); marbles.forEach(o => { if (m !== o && !m.finished && !o.finished && !m.eliminated && !o.eliminated) { let dx = o.x - m.x; let dy = o.y - m.y; let dist = Math.sqrt(dx*dx + dy*dy); if (dist < m.radius + o.radius) { let tX = m.vx; let tY = m.vy; m.vx = o.vx*RESTITUTION; m.vy = o.vy*RESTITUTION; o.vx = tX*RESTITUTION; o.vy = tY*RESTITUTION; let overlap = (m.radius + o.radius) - dist; m.x -= (dx/dist)*(overlap/2); m.y -= (dy/dist)*(overlap/2); m.x += (Math.random()-0.5)*0.2; } } }); m.draw(); });
     ctx.restore();
     
     if (frameCount % 5 === 0) { 
-        document.getElementById('lbContent').innerHTML = sorted.map((m, i) => `<div class="lb-item"><div class="lb-rank">${m.finished ? m.finishRank : i+1}.</div><div class="lb-color" style="background:${m.color}"></div><div class="lb-name">${m.name} ${m.finished ? "🏁" : ""}</div></div>`).join(''); 
-        
-        let currentFinishedCount = marbles.filter(m => m.finished).length;
-        if (currentFinishedCount > lastFinishedCount) {
-            lastFinishedCount = currentFinishedCount;
-            if (autoScrollEnabled) {
-                let firstUnfinishedIdx = sorted.findIndex(m => !m.finished);
-                if (firstUnfinishedIdx !== -1) {
-                    const lbWrap = document.getElementById('lbContentWrapper');
-                    let targetScroll = firstUnfinishedIdx * 45 - (lbWrap.clientHeight / 3);
-                    lbWrap.scrollTo({ top: targetScroll, behavior: 'smooth' });
-                }
-            }
-        }
+        document.getElementById('lbContent').innerHTML = sorted.map((m, i) => `<div class="lb-item ${m.eliminated?'eliminated':''}" onclick="spectate(${m.id})" style="${spectatedMarble===m?'border-color:#00ffcc':''}"><div class="lb-rank">${m.finished||m.eliminated ? m.finishRank : i+1}.</div><div class="lb-color" style="background:${m.color}"></div><div class="lb-name">${m.name} ${m.finished ? "🏁" : ""} ${m.eliminated ? "❌" : ""}</div><div class="lb-time">${m.finishTime ? formatTimePrecise(m.finishTime) : formatTimePrecise(performance.now() - raceStartTime)}</div></div>`).join(''); 
+        let currentFinishedCount = marbles.filter(m => m.finished || m.eliminated).length;
+        if (currentFinishedCount > lastFinishedCount) { lastFinishedCount = currentFinishedCount; if (autoScrollEnabled) { let fIdx = sorted.findIndex(m => !m.finished && !m.eliminated); if (fIdx !== -1) { const lbWrap = document.getElementById('lbContentWrapper'); lbWrap.scrollTo({ top: fIdx * 45 - (lbWrap.clientHeight / 3), behavior: 'smooth' }); } } }
     }
     if (!raceOver) animationId = requestAnimationFrame(animate);
 }
 
 function endRace() {
-    raceOver = true; document.getElementById('gameUI').style.display = 'none'; document.getElementById('postRaceUI').style.display = 'block'; let sortedRef = [...marbles].sort((a,b) => a.finishRank - b.finishRank); let winner = sortedRef[0]; drawGraph();
+    raceOver = true; if(isRecording) toggleRecording(); document.getElementById('gameUI').style.display = 'none'; document.getElementById('postRaceUI').style.display = 'block'; 
+    let sortedRef = [...marbles].sort((a,b) => a.finishRank - b.finishRank); let winner = sortedRef[0]; drawGraph();
+    
+    let validF = sortedRef.filter(m => m.finished && !m.eliminated); let cfHTML = "No finishers.";
+    if(validF.length >= 1) cfHTML = `<div style="color:#00ffcc;">1. ${validF[0].name} (${formatTimePrecise(validF[0].finishTime)})</div>`;
+    if(validF.length >= 2) cfHTML += `<div style="color:#fbbf24;">2. ${validF[1].name} (+${((validF[1].finishTime - validF[0].finishTime)/1000).toFixed(6)}s)</div>`;
+    if(validF.length >= 3) cfHTML += `<div style="color:#f43f5e;">3. ${validF[2].name} (+${((validF[2].finishTime - validF[1].finishTime)/1000).toFixed(6)}s)</div>`;
+    document.getElementById('closestFinishes').innerHTML = cfHTML;
+
     if (!isTournamentMode) { document.getElementById('postRaceTitle').innerText = "Race Complete!"; document.getElementById('winnerText').innerHTML = `🥇 1st Place: <span style="color:${winner.color}">${winner.name}</span>`; document.getElementById('tournamentResults').style.display = 'none'; document.getElementById('nextRoundBtn').style.display = 'none'; return; }
     
     let elimStr = document.getElementById('eliminationPattern').value; let elimArr = elimStr.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n > 0); if(elimArr.length === 0) elimArr = [1];
@@ -329,7 +394,7 @@ function endRace() {
 }
 
 function drawGraph() { const gCanvas = document.getElementById('graphCanvas'); const gCtx = gCanvas.getContext('2d'); gCtx.clearRect(0,0, gCanvas.width, gCanvas.height); const w = gCanvas.width; const h = gCanvas.height; const pad = 20; const num = marbles.length; gCtx.strokeStyle = '#334155'; gCtx.lineWidth = 1; for(let i=1; i<=num; i++) { let y = pad + ((i-1) / (num-1 || 1)) * (h - pad*2); gCtx.beginPath(); gCtx.moveTo(0, y); gCtx.lineTo(w, y); gCtx.stroke(); } const legend = document.getElementById('graphLegend'); legend.innerHTML = ''; marbles.sort((a,b) => a.finishRank - b.finishRank).forEach(m => { gCtx.strokeStyle = m.color; gCtx.lineWidth = 3; gCtx.lineJoin = 'round'; gCtx.beginPath(); m.history.forEach((rank, step) => { let x = pad + (step / Math.max(1, m.history.length-1)) * (w - pad*2); let y = pad + ((rank-1) / (num-1 || 1)) * (h - pad*2); step === 0 ? gCtx.moveTo(x, y) : gCtx.lineTo(x, y); }); gCtx.stroke(); legend.innerHTML += `<div class="legend-item"><div class="legend-color" style="background:${m.color}"></div>${m.finishRank}. ${m.name}</div>`; }); }
-function abortRace() { cancelAnimationFrame(animationId); fullReset(); } function fullReset() { document.getElementById('postRaceUI').style.display = 'none'; document.getElementById('gameUI').style.display = 'none'; document.getElementById('setupMenu').style.display = 'block'; }
+function abortRace() { cancelAnimationFrame(animationId); if(isRecording) toggleRecording(); fullReset(); } function fullReset() { document.getElementById('postRaceUI').style.display = 'none'; document.getElementById('gameUI').style.display = 'none'; document.getElementById('setupMenu').style.display = 'block'; }
 initUI();
 </script>
 </body>
