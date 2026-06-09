@@ -244,7 +244,7 @@ const mapArchitectures = [
 ];
 
 class Marble {
-    constructor(x, y, data) { this.x = x; this.y = y; this.vx = (Math.random()-0.5)*3; this.vy = (Math.random()-0.5)*3; this.radius = 10; this.color = data.color; this.name = data.name; this.img = data.img; this.dataRef = data; this.finished = false; this.eliminated = false; this.finishRank = 0; this.finishTime = 0; this.history = []; this.stuckFrames = 0; this.passedCheckpoints = [];}
+    constructor(x, y, data) { this.x = x; this.y = y; this.vx = (Math.random()-0.5)*3; this.vy = (Math.random()-0.5)*3; this.radius = 10; this.color = data.color; this.name = data.name; this.img = data.img; this.dataRef = data; this.finished = false; this.eliminated = false; this.finishRank = 0; this.finishTime = 0; this.history = []; this.posHistory = []; this.passedCheckpoints = [];}
     update() {
         if (this.finished || this.eliminated) return;
         let grav = curArch.getGravity(this); this.vx += grav.x + (Math.random()-0.5)*0.02; this.vy += grav.y + (Math.random()-0.5)*0.02; this.vx *= 0.99; this.vy *= 0.99; this.x += this.vx; this.y += this.vy;
@@ -253,8 +253,16 @@ class Marble {
         else { if (this.x - this.radius < 0) { this.x = this.radius; this.vx *= -RESTITUTION; } else if (this.x + this.radius > boundX) { this.x = boundX - this.radius; this.vx *= -RESTITUTION; } }
         if (this.y - this.radius < 0) { this.y = this.radius; this.vy *= -RESTITUTION; } else if (this.y + this.radius > boundY && !isKnockoutMode) { this.y = boundY - this.radius; this.vy *= -RESTITUTION; }
         
-        if (Math.abs(this.vx) < 0.05 && Math.abs(this.vy) < 0.05) this.stuckFrames++; else this.stuckFrames = 0;
-        if (this.stuckFrames > 45) { this.vx = (Math.random()-0.5)*25; this.vy = (Math.random()-0.5)*25 - 5; if(!curArch.wrapX){ this.x = Math.max(this.radius, Math.min(boundX-this.radius, this.x + (Math.random()-0.5)*15)); } this.stuckFrames = 0;}
+        this.posHistory.push({x: this.x, y: this.y});
+        if (this.posHistory.length > 60) {
+            let oldPos = this.posHistory.shift();
+            let dist = Math.sqrt(Math.pow(this.x - oldPos.x, 2) + Math.pow(this.y - oldPos.y, 2));
+            if (dist < 3) {
+                this.vx = (Math.random()-0.5)*30; this.vy = (Math.random()-0.5)*30 - 10;
+                if(!curArch.wrapX){ this.x = Math.max(this.radius, Math.min(boundX-this.radius, this.x + (Math.random()-0.5)*20)); }
+                this.y -= 5; this.posHistory = [];
+            }
+        }
 
         let prog = curArch.getProgress(this);
         if (isKnockoutMode) {
