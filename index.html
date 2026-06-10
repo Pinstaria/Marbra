@@ -153,7 +153,7 @@
         <div id="gameWrapper">
             <div class="canvas-container">
                 <div id="roundBanner" style="display:none;">Round 1</div>
-                <canvas id="raceCanvas" width="500" height="700"></canvas>
+                <canvas id="raceCanvas" width="750" height="700"></canvas>
             </div>
             <div id="liveLeaderboard">
                 <div class="lb-title">LIVE STANDINGS</div>
@@ -411,10 +411,38 @@ function animate() {
     if(isSuddenDeath) { let intv = (parseInt(document.getElementById('sdInterval').value)||5)*1000; if(now - raceStartTime > intv && act.length > 1) { let last = act[act.length-1]; if(!(last.pUp>0 && last.pType.id===10)){ last.eliminated = true; last.finishTime = now - raceStartTime; last.finishRank = act.length; last.displayTime = `Eliminated: ${last.finishRank}th Place`; raceStartTime = now; } } if(act.length===1 && marbles.filter(m=>!m.eliminated).length===1) { act[0].finished=true; act[0].finishTime=now-raceStartTime; act[0].finishRank=1; act[0].displayTime=formatTimePrecise(act[0].finishTime); setTimeout(endRace,1000); } }
     
     // Draw Leaderboard ON Video Canvas
-    ctx.fillStyle = "rgba(15, 23, 42, 0.85)"; ctx.fillRect(canvas.width - 220, 10, 210, 310);
-    ctx.fillStyle = "#00ffcc"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.fillText("LIVE STANDINGS", canvas.width - 115, 30);
-    for(let i=0; i<Math.min(10, sorted.length); i++) { let m = sorted[i]; ctx.fillStyle = m.eliminated ? "rgba(244,63,94,0.3)" : m.finished ? "rgba(0,255,204,0.2)" : "rgba(255,255,255,0.1)"; ctx.fillRect(canvas.width-215, 45+i*25, 200, 22); ctx.fillStyle = m.color; ctx.beginPath(); ctx.arc(canvas.width-200, 56+i*25, 6, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = m.eliminated ? "#94a3b8" : "#ffffff"; ctx.textAlign = "left"; ctx.fillText(`${m.finished||m.eliminated?m.finishRank:i+1}. ${m.name.substring(0,10)}`, canvas.width-185, 60+i*25); }
+    // Draw Leaderboard ON Video Canvas (Now with intelligent Auto-Scrolling)
+    ctx.fillStyle = "#0f111a"; ctx.fillRect(500, 0, 250, canvas.height);
+    ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(500, 0); ctx.lineTo(500, canvas.height); ctx.stroke();
+    ctx.fillStyle = "#00ffcc"; ctx.font = "bold 16px Arial"; ctx.textAlign = "center"; ctx.fillText("VIDEO STANDINGS", 625, 30);
+    
+    // Video Leaderboard Camera Logic
+    if(typeof window.vidScrollY === 'undefined') window.vidScrollY = 0;
+    let activeIdx = sorted.findIndex(m => !m.finished && !m.eliminated);
+    if(activeIdx === -1) activeIdx = 0;
+    let maxScroll = Math.max(0, sorted.length * 25 - (canvas.height - 60));
+    let targetScroll = Math.max(0, Math.min(maxScroll, (activeIdx * 25) - 150));
+    window.vidScrollY += (targetScroll - window.vidScrollY) * 0.1; // Smooth lerp
 
+    ctx.save(); // Save canvas state
+    ctx.beginPath(); ctx.rect(500, 40, 250, canvas.height - 40); ctx.clip(); // Mask to protect title
+    
+    for(let i=0; i<sorted.length; i++) { 
+        let drawY = 45 + i*25 - window.vidScrollY;
+        if(drawY < 10 || drawY > canvas.height + 30) continue; // Culling for performance
+
+        let m = sorted[i]; 
+        ctx.fillStyle = m.eliminated ? "rgba(244,63,94,0.3)" : m.finished ? "rgba(0,255,204,0.2)" : "rgba(255,255,255,0.05)"; 
+        ctx.fillRect(510, drawY, 230, 22); 
+        ctx.fillStyle = m.color; ctx.beginPath(); ctx.arc(525, drawY+11, 6, 0, Math.PI*2); ctx.fill(); 
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = m.eliminated ? "#94a3b8" : "#ffffff"; ctx.textAlign = "left"; ctx.font = "bold 12px Arial"; 
+        ctx.fillText(`${m.finished||m.eliminated?m.finishRank:i+1}. ${m.name.substring(0,12)}`, 540, drawY+16); 
+        ctx.fillStyle = "#fbbf24"; ctx.textAlign = "right"; ctx.font = "bold 11px 'Courier New', monospace";
+        let t = m.finished||m.eliminated ? m.displayTime : formatTimePrecise(now - raceStartTime);
+        ctx.fillText(t.replace("Eliminated: ", "Elim: ").substring(0, 11), 735, drawY+15);
+    }
+    ctx.restore(); // Remove mask
     if (frameCount % 5 === 0) { 
         document.getElementById('lbContent').innerHTML = sorted.map((m, i) => `<div class="lb-item ${m.finished?'finished':''} ${m.eliminated?'eliminated':''}" onclick="spectate(${m.id})" style="${spectatedMarble===m?'border-color:#00ffcc':''}"><div class="lb-rank">${m.finished||m.eliminated ? m.finishRank : i+1}.</div><div class="lb-color" style="background:${m.color}"></div><div class="lb-name">${m.name}</div><div class="lb-time">${m.finished||m.eliminated ? m.displayTime : formatTimePrecise(now - raceStartTime)}</div></div>`).join(''); 
     }
